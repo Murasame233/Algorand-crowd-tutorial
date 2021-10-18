@@ -41,12 +41,14 @@ source env/bin/activate // activate the python virtual env
 
 pip install --upgrade pip
 pip install pyteal
+pip install python-dotenv
 ```
 
 This will create virtual env on the contract folder, and install the packages we need.
 
 Needed python package.
 - `pyteal`
+- `python-dotenv`
 
 From now, when you run the python script, make sure you are under the virtual env.
 
