@@ -1,4 +1,4 @@
-from pyteal import Bytes, App, Cond, Seq, Txn, Int, Assert, Return, Global, Gtxn, OnComplete, TxnType, And, compileTeal, Mode
+from pyteal import Bytes, App, Cond, Seq, Txn, Int, Assert, Return, Global, Gtxn, OnComplete, TxnType, And, compileTeal, Mode,Btoi
 
 
 def contract():
@@ -9,7 +9,7 @@ def contract():
             # valid the args length
             Assert(Txn.application_args.length() == Int(1)),
             # store the goal
-            App.globalPut(Bytes("Goal"), Txn.application_args[0]),
+            App.globalPut(Bytes("Goal"), Btoi(Txn.application_args[0])),
             # set amount to zero
             App.globalPut(Bytes("Amount"), Int(0)),
             # return success
@@ -37,8 +37,8 @@ def contract():
             # The donate reciever must be the escrow
             Assert(Gtxn[1].receiver() == App.globalGet(Bytes("Escrow"))),
             # Add new donate to total
-            App.globalPut(Bytes("Total"), Gtxn[1].amount(
-            )+App.globalGet(Bytes("Total"))),
+            App.globalPut(Bytes("Amount"), Gtxn[1].amount(
+            )+App.globalGet(Bytes("Amount"))),
 
             Return(Int(1))
         ]
@@ -53,7 +53,7 @@ def contract():
             # sender must be the escrow
             Assert(Gtxn[1].sender() == App.globalGet(Bytes("Escrow"))),
             # reset the total count
-            App.globalPut(Bytes("Total"), Int(0)),
+            App.globalPut(Bytes("Amount"), Int(0)),
 
             Return(Int(1))
         ]
@@ -64,18 +64,22 @@ def contract():
             # valid creator
             Assert(Txn.sender() == App.globalGet(Bytes("Creator"))),
             # valid all donate has been take out.
-            Assert(App.globalGet(Bytes("Total")) == Int(0)),
+            Assert(App.globalGet(Bytes("Amount")) == Int(0)),
 
             Return(Int(1))
         ]
     )
 
-    return Cond(
-        [Txn.application_id() == Int(0), on_create],
+    call = Cond(
         [Txn.application_args[0] == Bytes("update"), update_escrow],
         [Txn.application_args[0] == Bytes("donate"), donate],
         [Txn.application_args[0] == Bytes("claim"), claim],
-        [Txn.on_completion() == OnComplete.DeleteApplication, delete_app]
+    )
+
+    return Cond(
+        [Txn.application_id() == Int(0), on_create],
+        [Txn.on_completion() == OnComplete.DeleteApplication, delete_app],
+        [Txn.on_completion() == OnComplete.NoOp, call]
     )
 
 
