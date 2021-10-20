@@ -61,7 +61,7 @@ And the code on smart contract.
             # valid the args length
             Assert(Txn.application_args.length() == Int(1)),
             # store the goal
-            App.globalPut(Bytes("Goal"), Txn.application_args[0]),
+            App.globalPut(Bytes("Goal"), Btoi(Txn.application_args[0])),
             # set amount to zero
             App.globalPut(Bytes("Amount"), Int(0)),
             # return success
@@ -102,25 +102,33 @@ the update method will have args like this:
 So on the code will be this
 
 ```python
-    update_escrow = Seq([
-        # Valid call from the Creator
-        Assert(Txn.sender() == App.globalGet(Bytes("Creator"))),
-        # valid length
-        Assert(Txn.application_args.length() == Int(2)),
-        # store escrow
-        App.globalPut(Bytes("Escrow"), Txn.application_args[1]),
+    update_escrow = Seq(
+        [
+            # Valid call from the Creator
+            Assert(Txn.sender() == App.globalGet(Bytes("Creator"))),
+            # valid length
+            Assert(Txn.application_args.length() == Int(2)),
+            # store escrow
+            App.globalPut(Bytes("Escrow"), Txn.application_args[1]),
 
-        Return(Int(1))
-    ])
+            Return(Int(1))
+        ]
+    )
 ```
 
-And the return will be this
+Of course, this call will be a NOOP call, so we use another cond called `call` to handle this.
+
+And the code be this
 
 ```python
+    call = Cond(
+        [Txn.application_args[0] == Bytes("update"), update_escrow],
+    )
+
     return Cond(
-        [Txn.application_id() == Int(0),on_create],
-        [Txn.application_args[0] == Bytes("update")]
-        )
+        [Txn.application_id() == Int(0), on_create],
+        [Txn.on_completion() == OnComplete.NoOp, call]
+    )
 ```
 
 ## User Donate
@@ -144,24 +152,24 @@ Here's code:
     donate = Seq(
         [
             # Must be a size 2 transaction group
-            Global.group_size() == Int(2),
-            Gtxn[1].receiver() == App.globalGet(Bytes("Escrow")),
+            Assert(Global.group_size() == Int(2)),
+            # The donate reciever must be the escrow
+            Assert(Gtxn[1].receiver() == App.globalGet(Bytes("Escrow"))),
             # Add new donate to total
-            App.globalPut(Bytes("Total"), Gtxn[1].amount(
-            )+App.globalGet(Bytes("Total"))),
+            App.globalPut(Bytes("Amount"), Gtxn[1].amount(
+            )+App.globalGet(Bytes("Amount"))),
 
             Return(Int(1))
         ]
     )
 ```
 
-And here's the return now:
+And here's the `call` now:
 
 ```python
-    return Cond(
-        [Txn.application_id() == Int(0), on_create],
+    call = Cond(
         [Txn.application_args[0] == Bytes("update"), update_escrow],
-        [Txn.application_args[0] == Bytes("donate"), donate]
+        [Txn.application_args[0] == Bytes("donate"), donate],
     )
 ```
 
@@ -184,24 +192,23 @@ Code:
     claim = Seq(
         [
             # Must be a size 2 transaction groups
-            Global.group_size() == Int(2),
+            Assert(Global.group_size() == Int(2)),
             # only creator can claim
-            Txn.sender() == App.globalGet(Bytes("Creator")),
+            Assert(Txn.sender() == App.globalGet(Bytes("Creator"))),
             # sender must be the escrow
-            Gtxn[1].sender() == App.globalGet(Bytes("Escrow")),
+            Assert(Gtxn[1].sender() == App.globalGet(Bytes("Escrow"))),
             # reset the total count
-            App.globalPut(Bytes("Total"), Int(0)),
+            App.globalPut(Bytes("Amount"), Int(0)),
 
             Return(Int(1))
         ]
     )
 ```
 
-The return:
+The `call`:
 
 ```python
-    return Cond(
-        [Txn.application_id() == Int(0), on_create],
+    call = Cond(
         [Txn.application_args[0] == Bytes("update"), update_escrow],
         [Txn.application_args[0] == Bytes("donate"), donate],
         [Txn.application_args[0] == Bytes("claim"), claim],
@@ -228,7 +235,7 @@ Here's code:
             # valid creator
             Assert(Txn.sender() == App.globalGet(Bytes("Creator"))),
             # valid all donate has been take out.
-            Assert(App.globalGet(Bytes("Total")) == Int(0)),
+            Assert(App.globalGet(Bytes("Amount")) == Int(0)),
 
             Return(Int(1))
         ]
@@ -240,10 +247,8 @@ Return now:
 ```python
     return Cond(
         [Txn.application_id() == Int(0), on_create],
-        [Txn.application_args[0] == Bytes("update"), update_escrow],
-        [Txn.application_args[0] == Bytes("donate"), donate],
-        [Txn.application_args[0] == Bytes("claim"), claim],
-        [Txn.on_completion() == OnComplete.DeleteApplication, delete_app]
+        [Txn.on_completion() == OnComplete.DeleteApplication, delete_app],
+        [Txn.on_completion() == OnComplete.NoOp, call]
     )
 ```
 
@@ -252,7 +257,7 @@ Return now:
 the final code:
 
 ```python
-from pyteal import Bytes, App, Cond, Seq, Txn, Int, Assert, Return, Global, Gtxn, OnComplete, TxnType, And, compileTeal, Mode
+from pyteal import Bytes, App, Cond, Seq, Txn, Int, Assert, Return, Global, Gtxn, OnComplete, TxnType, And, compileTeal, Mode,Btoi
 
 
 def contract():
@@ -263,7 +268,7 @@ def contract():
             # valid the args length
             Assert(Txn.application_args.length() == Int(1)),
             # store the goal
-            App.globalPut(Bytes("Goal"), Txn.application_args[0]),
+            App.globalPut(Bytes("Goal"), Btoi(Txn.application_args[0])),
             # set amount to zero
             App.globalPut(Bytes("Amount"), Int(0)),
             # return success
@@ -291,8 +296,8 @@ def contract():
             # The donate reciever must be the escrow
             Assert(Gtxn[1].receiver() == App.globalGet(Bytes("Escrow"))),
             # Add new donate to total
-            App.globalPut(Bytes("Total"), Gtxn[1].amount(
-            )+App.globalGet(Bytes("Total"))),
+            App.globalPut(Bytes("Amount"), Gtxn[1].amount(
+            )+App.globalGet(Bytes("Amount"))),
 
             Return(Int(1))
         ]
@@ -307,7 +312,7 @@ def contract():
             # sender must be the escrow
             Assert(Gtxn[1].sender() == App.globalGet(Bytes("Escrow"))),
             # reset the total count
-            App.globalPut(Bytes("Total"), Int(0)),
+            App.globalPut(Bytes("Amount"), Int(0)),
 
             Return(Int(1))
         ]
@@ -318,19 +323,60 @@ def contract():
             # valid creator
             Assert(Txn.sender() == App.globalGet(Bytes("Creator"))),
             # valid all donate has been take out.
-            Assert(App.globalGet(Bytes("Total")) == Int(0)),
+            Assert(App.globalGet(Bytes("Amount")) == Int(0)),
 
             Return(Int(1))
         ]
     )
 
-    return Cond(
-        [Txn.application_id() == Int(0), on_create],
+    call = Cond(
         [Txn.application_args[0] == Bytes("update"), update_escrow],
         [Txn.application_args[0] == Bytes("donate"), donate],
         [Txn.application_args[0] == Bytes("claim"), claim],
-        [Txn.on_completion() == OnComplete.DeleteApplication, delete_app]
     )
+
+    return Cond(
+        [Txn.application_id() == Int(0), on_create],
+        [Txn.on_completion() == OnComplete.DeleteApplication, delete_app],
+        [Txn.on_completion() == OnComplete.NoOp, call]
+    )
+
+
+def clear():
+    return Return(Int(1))
+
+
+def escrow():
+    # The appid will be edit in the TEAL with backend.
+    is_two_tx = Global.group_size() == Int(2)
+    is_appcall = Gtxn[0].type_enum() == TxnType.ApplicationCall
+    # here's the appid placeholder
+    is_appid = Gtxn[0].application_id() == Int(123456)
+    acceptable_app_call = Gtxn[0].on_completion() == OnComplete.NoOp
+    no_rekey = And(
+        Gtxn[0].rekey_to() == Global.zero_address(),
+        Gtxn[1].rekey_to() == Global.zero_address()
+    )
+    return And(
+        is_two_tx,
+        is_appcall,
+        is_appid,
+        acceptable_app_call,
+        no_rekey,
+    )
+
+
+with open('build/contract.teal', 'w') as f:
+    compiled = compileTeal(contract(), Mode.Application, version=4)
+    f.write(compiled)
+
+with open('build/clear.teal', 'w') as f:
+    compiled = compileTeal(clear(), Mode.Application, version=4)
+    f.write(compiled)
+
+with open('build/escrow.teal', 'w') as f:
+    compiled = compileTeal(escrow(), Mode.Application, version=4)
+    f.write(compiled)
 
 ```
 
