@@ -1,9 +1,11 @@
 import os
 from algosdk import encoding, v2client
-from algosdk.future.transaction import LogicSig, ApplicationCreateTxn, ApplicationDeleteTxn, ApplicationNoOpTxn, ApplicationOptInTxn, LogicSigTransaction, OnComplete, PaymentTxn, StateSchema, assign_group_id
+from algosdk.future.transaction import ApplicationCallTxn, LogicSig, ApplicationCreateTxn, ApplicationDeleteTxn, ApplicationNoOpTxn, ApplicationOptInTxn, LogicSigTransaction, OnComplete, PaymentTxn, StateSchema, assign_group_id
 import dotenv
 import base64
 from time import sleep
+
+import msgpack
 
 dotenv.load_dotenv()
 
@@ -47,8 +49,10 @@ create_txn = ApplicationCreateTxn(
         100000
     ]
 )
+e = encoding.msgpack_encode(create_txn);
+c:ApplicationCallTxn = encoding.future_msgpack_decode(e);
 
-create_txn_signed = create_txn.sign(private_key_a)
+create_txn_signed = c.sign(private_key_a)
 
 tx_id = create_txn_signed.get_txid()
 
