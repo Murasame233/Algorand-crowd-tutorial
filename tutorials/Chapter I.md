@@ -17,11 +17,9 @@ You'd better have nodejs experience for DApp dev.
 ├── Makefile // Some fast command
 ├── README.md
 ├── Tutorial.md
-├── backend // Dapp's backend, use later the.
 ├── contract // Smart contract folder
 │   ├── env // Python venv folder
 │   └── requirements.txt // Python installed package
-└── frontend // Dapp's frontend, use later the.
 
 ```
 
@@ -29,7 +27,7 @@ You'd better have nodejs experience for DApp dev.
 
 ## Create Dir
 ```
-mkdir contract backend frontend
+mkdir contract
 ```
 
 ## Ready the Python virtual env
