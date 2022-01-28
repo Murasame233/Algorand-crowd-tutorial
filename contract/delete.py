@@ -1,5 +1,5 @@
 import os
-from algosdk import v2client
+from algosdk import v2client,mnemonic
 from algosdk.future.transaction import ApplicationCreateTxn, ApplicationDeleteTxn, OnComplete, StateSchema
 import dotenv
 import base64
@@ -7,19 +7,18 @@ from time import sleep
 
 dotenv.load_dotenv()
 
-private_key_a = os.environ.get("ACCOUNT_A_KEY")
-address_a = os.environ.get("ACCOUNT_A")
+A = os.environ.get("ACCOUNT_A")
+B = os.environ.get("ACCOUNT_B")
+private_key_a = mnemonic.to_private_key(A)
+address_a = mnemonic.to_public_key(A)
 
-private_key_b = os.environ.get("ACCOUNT_B_KEY")
-address_b = os.environ.get("ACCOUNT_B")
+private_key_b = mnemonic.to_private_key(B)
+address_b = mnemonic.to_public_key(B)
 
-endpoint_address = os.environ.get("ALGOD_ADDRESS")
-api_key = os.environ.get("TOKEN")
+algod_address = "http://localhost:4001"
+algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
-api_header = {'X-Api-key': api_key}
-
-client = v2client.algod.AlgodClient(
-    api_key, endpoint_address, headers=api_header)
+client = v2client.algod.AlgodClient(algod_token, algod_address)
 
 print("client created")
 
