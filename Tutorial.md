@@ -6,8 +6,6 @@
 
 You'd better have python experience for smart contract dev.
 
-You'd better have nodejs experience for DApp dev.
-
 ## folder struct
 
 ```
