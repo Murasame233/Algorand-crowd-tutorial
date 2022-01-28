@@ -214,7 +214,7 @@ with open('build/clear.teal', 'w') as f:
 ```
 
 #### Final Code
-
+[Github](https://github.com/Murasame233/Algorand-crowd-tutorial/blob/master/contract/contract.py)
 ## Test - `Test.py`
 
 #### Setup Sandbox
@@ -380,3 +380,4 @@ client.send_transaction(delete_txn.sign(private_key_a))
 ```
 
 #### Final Code
+[Github](https://github.com/Murasame233/Algorand-crowd-tutorial/blob/master/contract/test.py)
