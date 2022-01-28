@@ -3,8 +3,6 @@
 ## Pre requirements
 
 - `Python @latest`
-- `Node.js @LTS`
-- `CMake`
 
 You'd better have python experience for smart contract dev.
 
