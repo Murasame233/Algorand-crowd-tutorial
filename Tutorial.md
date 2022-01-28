@@ -59,7 +59,7 @@ Our contract have two functions:
 - claim
 - donate
 
-So we decide to use donate to record the donation.
+And we decide to use donate to record the donation.
 
 #### Code
 
@@ -128,6 +128,8 @@ When we donate, we need two transaction:
 
 - Application Call
 - Payment to Escrow
+
+This will composit a [group transaction](https://developer.algorand.org/docs/get-details/atomic_transfers).
 
 `Log` function only receive bytes parameter, we must convert amount to bytes by `Itob`.
 
@@ -328,7 +330,8 @@ escrow = encoding.encode_address(
 ```
 
 ##### Donate and claim
-
+we need to use [group transaction](https://developer.algorand.org/docs/get-details/atomic_transfers/) to donate.
+And the payment will send to escrow
 ```python
 # donate
 donate = assign_group_id(
@@ -353,7 +356,8 @@ client.send_transactions(
 
 print("wait for 10 sec to comfirm the txn.")
 sleep(10)
-
+```
+```python
 # claim
 claim = ApplicationNoOpTxn(
     address_a,
